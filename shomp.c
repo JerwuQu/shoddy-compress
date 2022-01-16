@@ -37,6 +37,14 @@ size_t shomp_compress(uint8_t *out, const uint8_t *data, size_t sz)
 	size_t prefix = 0, chunkI = 0, prefixI = 0, outI = 1;
 	for (size_t i = 0; i < sz; i++) {
 		size_t longestMatchDist, longestMatchLen = 0;
+		if (chunkI == 8) {
+			if (out) {
+				out[prefixI] = prefix;
+			}
+			prefixI = outI++;
+			prefix = 0;
+			chunkI = 0;
+		}
 		for (size_t j = 0; j < i; j++) {
 			size_t matchLen = 0;
 			while (j + matchLen < i && data[i + matchLen] == data[j + matchLen]) {
@@ -70,14 +78,7 @@ size_t shomp_compress(uint8_t *out, const uint8_t *data, size_t sz)
 			}
 			outI++;
 		}
-		if (++chunkI == 8) {
-			if (out) {
-				out[prefixI] = prefix;
-			}
-			prefixI = outI++;
-			prefix = 0;
-			chunkI = 0;
-		}
+		chunkI++;
 	}
 	if (chunkI) {
 		if (out) {
