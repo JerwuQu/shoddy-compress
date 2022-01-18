@@ -18,22 +18,23 @@ size_t shomp_uleb_encode(uint8_t *out, size_t num)
 size_t shomp_compress(uint8_t *out, const uint8_t *data, size_t sz)
 {
 	// NOTE: the name doesn't lie, this is shoddy
-	// Basically a variation of LZ77 using ULEB128 for distances
+	// Basically a variation of LZ77 using an infinite window with ULEB128 for distances
 	// Each 8 segments are prefixed by a byte telling what they are
-	size_t prefix = 0, chunkI = 0, prefixI = 0, outI = 1;
+	size_t chunk = 8, prefixI = 0, outI = 0;
 	for (size_t i = 0; i < sz; i++) {
 		size_t longestMatchDist, longestMatchLen = 0;
-		if (chunkI == 8) {
-			if (out) {
-				out[prefixI] = prefix;
-			}
+		if (chunk == 8) {
+			chunk = 0;
 			prefixI = outI++;
-			prefix = 0;
-			chunkI = 0;
+			if (out) {
+				out[prefixI] = 0;
+			}
 		}
 		for (size_t j = 0; j < i; j++) {
 			size_t matchLen = 0;
-			while (j + matchLen < i && i + matchLen < sz && data[i + matchLen] == data[j + matchLen]) {
+			while (j + matchLen < i
+					&& i + matchLen < sz
+					&& data[i + matchLen] == data[j + matchLen]) {
 				matchLen++;
 			}
 			if (matchLen > longestMatchLen) {
@@ -42,15 +43,17 @@ size_t shomp_compress(uint8_t *out, const uint8_t *data, size_t sz)
 			}
 		}
 		if (longestMatchLen) {
-			const size_t ulebLen = shomp_uleb_encode(NULL, longestMatchDist - 1) + shomp_uleb_encode(NULL, longestMatchLen - 1);
+			const size_t ulebLen =
+				shomp_uleb_encode(NULL, longestMatchDist - 1)
+				+ shomp_uleb_encode(NULL, longestMatchLen - 1);
 			if (ulebLen > longestMatchLen * 2) {
 				if (out) {
 					out[outI] = data[i];
 				}
 				outI++;
 			} else {
-				prefix |= 1 << chunkI;
 				if (out) {
+					out[prefixI] |= 1 << chunk;
 					outI += shomp_uleb_encode(out + outI, longestMatchDist - 1);
 					outI += shomp_uleb_encode(out + outI, longestMatchLen - 1);
 				} else {
@@ -64,12 +67,7 @@ size_t shomp_compress(uint8_t *out, const uint8_t *data, size_t sz)
 			}
 			outI++;
 		}
-		chunkI++;
-	}
-	if (chunkI) {
-		if (out) {
-			out[prefixI] = prefix;
-		}
+		chunk++;
 	}
 	return outI;
 }
