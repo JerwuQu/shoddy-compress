@@ -33,7 +33,7 @@ size_t shomp_compress(uint8_t *out, const uint8_t *data, size_t sz)
 		}
 		for (size_t j = 0; j < i; j++) {
 			size_t matchLen = 0;
-			while (j + matchLen < i && data[i + matchLen] == data[j + matchLen]) {
+			while (j + matchLen < i && i + matchLen < sz && data[i + matchLen] == data[j + matchLen]) {
 				matchLen++;
 			}
 			if (matchLen > longestMatchLen) {
