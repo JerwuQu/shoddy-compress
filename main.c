@@ -36,6 +36,13 @@ int main(int argc, char **argv)
 		// Sanity check
 		const size_t dsz = shomp_decompress(NULL, out, outsz);
 		assert(dsz == fsize);
+		uint8_t *decmp = malloc(dsz);
+		assert(decmp);
+		shomp_decompress(decmp, out, outsz);
+		for (size_t i = 0; i < fsize; i++) {
+			assert(data[i] == decmp[i]);
+		}
+		free(decmp);
 	} else {
 		outsz = shomp_decompress(NULL, data, fsize);
 		out = malloc(outsz);
@@ -49,6 +56,7 @@ int main(int argc, char **argv)
 	assert(f);
 	fwrite(out, outsz, 1, f);
 	fclose(f);
+	free(out);
 
 	return 0;
 }
